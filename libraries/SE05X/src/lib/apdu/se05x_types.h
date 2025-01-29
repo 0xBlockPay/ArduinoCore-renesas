@@ -210,6 +210,7 @@ typedef enum
     /** Invalid */
     kSE05x_ECCurve_NA        = 0x00,
     kSE05x_ECCurve_NIST_P256 = 0x03,
+    kSE05x_ECCurve_K256    = 0x10,
 } SE05x_ECCurve_t;
 
 /** Values for INS in ISO7816 APDU */

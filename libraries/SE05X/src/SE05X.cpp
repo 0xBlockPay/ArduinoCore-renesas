@@ -216,6 +216,66 @@ int SE05XClass::generatePrivateKey(int keyID, byte keyBuf[], size_t keyBufMaxLen
     return generatePrivateKey(keyID, &keyBuf[SE05X_EC_KEY_DER_HEADER_LENGTH + SE05X_EC_KEY_FORMAT_LENGTH]);
 }
 
+int SE05XClass::generatePrivateKeyK256(int keyID, byte keyBuf[], size_t keyBufMaxLen, size_t* keyLen)
+{
+    if (keyBufMaxLen < SE05X_EC_KEY_DER_LENGTH ) {
+        SMLOG_E("Error in generatePrivateKey buffer length \n");
+        return 0;
+    }
+
+    *keyLen = SE05X_EC_KEY_DER_LENGTH;
+
+    /* Copy header byte from 0 to 25 */
+    memcpy(keyBuf, ecc_der_header_nist256, sizeof(ecc_der_header_nist256));
+
+    /* Add format byte */
+    keyBuf[SE05X_EC_KEY_DER_HEADER_LENGTH] = 0x04;
+
+    /* Add X Y points */
+    return generatePrivateKeyK256(keyID, &keyBuf[SE05X_EC_KEY_DER_HEADER_LENGTH + SE05X_EC_KEY_FORMAT_LENGTH]);
+}
+
+
+int SE05XClass::generatePrivateKeyK256(int keyID, byte publicKey[])
+{
+    smStatus_t      status;
+    SE05x_ECCurve_t curveID =  kSE05x_ECCurve_K256;
+    SE05x_Result_t  result;
+
+    /* SE050 fills a buffer with 1 byte key format + 64 bytes of X Y points */
+    uint8_t         keyBuf[SE05X_EC_KEY_FORMAT_LENGTH + SE05X_EC_KEY_RAW_LENGTH];
+    size_t          keylen = sizeof(keyBuf);
+
+    status = Se05x_API_CheckObjectExists(&_se05x_session, keyID, &result);
+    if (status != SM_OK) {
+        SMLOG_E("Error in Se05x_API_CheckObjectExists \n");
+        return 0;
+    }
+
+    if (result == kSE05x_Result_SUCCESS) {
+        SMLOG_I("Object already exists \n");
+        curveID = kSE05x_ECCurve_NA;
+    }
+
+    SMLOG_I("Generate ec key \n");
+    status = Se05x_API_WriteECKey(&_se05x_session, NULL, 0, keyID, curveID, NULL, 0, NULL, 0, kSE05x_INS_NA, kSE05x_KeyPart_Pair);
+    if (status != SM_OK) {
+        SMLOG_E("Error in Se05x_API_WriteECKey \n");
+        return 0;
+    }
+
+    status = Se05x_API_ReadObject(&_se05x_session, keyID, 0, 0, keyBuf, &keylen);
+    if (status != SM_OK) {
+        SMLOG_E("Error in Se05x_API_ReadObject \n");
+        return 0;
+    }
+
+    /* To User: copy only 64 bytes of X Y points */
+    memcpy(publicKey, &keyBuf[SE05X_EC_KEY_FORMAT_LENGTH], SE05X_EC_KEY_RAW_LENGTH);
+
+    return 1;
+}
+
 int SE05XClass::generatePrivateKey(int keyID, byte publicKey[])
 {
     smStatus_t      status;

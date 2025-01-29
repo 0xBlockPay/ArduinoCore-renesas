@@ -39,7 +39,9 @@ void setup() {
   byte derBuf[256];
   size_t derSize;
 
-  SE05X.generatePrivateKey(KeyId, derBuf, sizeof(derBuf), &derSize);
+ // SE05X.generatePrivateKey(KeyId, derBuf, sizeof(derBuf), &derSize);
+
+  SE05X.generatePrivateKeyK256(KeyId, derBuf, sizeof(derBuf), &derSize);
 
   // print the input
   Serial.print("Input is:                     ");

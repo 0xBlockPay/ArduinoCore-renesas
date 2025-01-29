@@ -54,6 +54,8 @@ public:
     long random(long min, long max);
     int random(byte data[], size_t length);
 
+    int generatePrivateKeyK256(int keyID, byte keyBuf[], size_t keyBufMaxLen, size_t* keyLen);
+
     /** generatePrivateKey
      *
      * Create a new ECCurve_NIST_P256 keypair. Only public key will be available
