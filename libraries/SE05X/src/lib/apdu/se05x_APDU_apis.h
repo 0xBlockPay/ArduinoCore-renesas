@@ -487,6 +487,25 @@ smStatus_t Se05x_API_ECDSAVerify(pSe05xSession_t session_ctx,
  * @param[in] objectID object id [1:kSE05x_TAG_1]
  * @param[out] presult  [0:kSE05x_TAG_1]
  */
+
+ smStatus_t Se05x_API_EdDSASign(pSe05xSession_t session_ctx,
+    uint32_t objectID,
+    SE05x_EDSignatureAlgo_t ecSignAlgo,
+    const uint8_t *inputData,
+    size_t inputDataLen,
+    uint8_t *signature,
+    size_t *psignatureLen);
+
+smStatus_t Se05x_API_EdDSAVerify(pSe05xSession_t session_ctx,
+    uint32_t objectID,
+    SE05x_EDSignatureAlgo_t ecSignAlgo,
+    const uint8_t *inputData,
+    size_t inputDataLen,
+    const uint8_t *signature,
+    size_t signatureLen,
+    SE05x_Result_t *presult);
+
+
 smStatus_t Se05x_API_CheckObjectExists(pSe05xSession_t session_ctx, uint32_t objectID, SE05x_Result_t *presult);
 
 /** Se05x_API_WriteBinary

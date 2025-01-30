@@ -41,10 +41,15 @@
                                          SE05X_EC_KEY_FORMAT_LENGTH     + \
                                          SE05X_EC_KEY_RAW_LENGTH
 
+
+#define SE05X_ED_KEY_LENGTH 32
+
 /**
  * 32 bytes R values + 32 bytes S values
  */
 #define SE05X_EC_SIGNATURE_RAW_LENGTH    64
+
+#define SE05X_ED_SIGNATURE_RAW_LENGTH    64
 
 /**
  * 8 bytes worst case 30 45 02 21 00 | 32 bytes R values | 02 21 00 | 32 bytes S values
@@ -62,6 +67,8 @@
 #define SE05X_EC_SIGNATURE_MAX_DER_LENGTH    SE05X_EC_SIGNATURE_MAX_HEADER_LENGTH + \
                                              SE05X_EC_SIGNATURE_RAW_LENGTH
 
+#define SE05X_ED_SIGNATURE_MAX_LENGTH 72
+
 /**
  * 70 bytes best case
  */
@@ -69,6 +76,8 @@
                                              SE05X_EC_SIGNATURE_RAW_LENGTH
 
 #define SE05X_SHA256_LENGTH              32
+
+#define SE05X_SHA512_LENGTH              64
 
 #define SE05X_TEMP_OBJECT                9999
 
@@ -515,11 +524,50 @@ int SE05XClass::Sign(int keyID, const byte hash[], size_t hashLen, byte sig[], s
     return 1;
 }
 
+int SE05XClass::SignEd(int keyID, const byte hash[], size_t hashLen, byte sig[], size_t sigMaxLen, size_t* sigLen)
+{
+    smStatus_t      status;
+    SE05x_Result_t  result;
+
+    if (hashLen != SE05X_SHA512_LENGTH) {
+        SMLOG_E("Error in Sign invalid input SHA256 buffer \n");
+        *sigLen = 0;
+        return 0;
+    }
+
+    if (sigMaxLen < SE05X_ED_SIGNATURE_MAX_LENGTH) {
+        SMLOG_E("Error in Sign signature buffer too small \n");
+        *sigLen = 0;
+        return 0;
+    }
+
+    status = Se05x_API_CheckObjectExists(&_se05x_session, keyID, &result);
+    if (status != SM_OK) {
+        SMLOG_E("Error in Se05x_API_CheckObjectExists \n");
+        *sigLen = 0;
+        return 0;
+    }
+
+    if (result != kSE05x_Result_SUCCESS) {
+        SMLOG_E("Object not exists \n");
+        *sigLen = 0;
+        return 0;
+    }
+
+    *sigLen = sigMaxLen;
+    status = Se05x_API_EdDSASign(&_se05x_session, keyID, kSE05x_EDSignatureAlgo_SHA512, hash, hashLen, sig, sigLen);
+    if (status != SM_OK) {
+        SMLOG_E("Error in Se05x_API_EdDSASign \n");
+        return 0;
+    }
+    return 1;
+}
+
 int SE05XClass::ecSign(int slot, const byte message[], byte signature[])
 {
     byte signatureDer[SE05X_EC_SIGNATURE_MAX_DER_LENGTH];
     size_t signatureDerLen;
-    size_t size = SE05X_EC_SIGNATURE_RAW_LENGTH;
+    size_t size = SE05X_ED_SIGNATURE_RAW_LENGTH;
 
     if (!Sign(slot, message, SE05X_SHA256_LENGTH, signatureDer, sizeof(signatureDer), &signatureDerLen)) {
         SMLOG_E("Error in ecSign \n");
@@ -529,6 +577,20 @@ int SE05XClass::ecSign(int slot, const byte message[], byte signature[])
     /* Get r s values from DER buffer */
     if (!getECSignatureRsValuesFromDER(signatureDer, signatureDerLen, signature, &size)) {
         SMLOG_E("Error in ecSign cannot get R S values\n");
+        return 0;
+    }
+
+    return 1;
+}
+
+int SE05XClass::edSign(int slot, const byte message[], byte signature[])
+{
+    byte signature[SE05X_ED_SIGNATURE_MAX_LENGTH];
+    size_t signatureLen;
+    size_t size = SE05X_EC_SIGNATURE_RAW_LENGTH;
+
+    if (!SignEd(slot, message, SE05X_SHA512_LENGTH, signature, sizeof(signature), &signatureLen)) {
+        SMLOG_E("Error in edSign \n");
         return 0;
     }
 
@@ -583,6 +645,41 @@ int SE05XClass::ecdsaVerify(const byte message[], const byte signature[], const 
 
     if (!setECKeyXyVauesInDER(pubkey, SE05X_EC_KEY_RAW_LENGTH, pubKeyDER, &pubKeyDERLen)) {
         SMLOG_E("ecdsaVerify failure creating key DER\n");
+        return 0;
+    }
+
+    if (!importPublicKey(SE05X_TEMP_OBJECT, pubKeyDER, pubKeyDERLen)) {
+        SMLOG_E("ecdsaVerify failure importing temp key\n");
+        return 0;
+    }
+
+    if (!setECSignatureRsValuesInDER(signature, SE05X_EC_SIGNATURE_RAW_LENGTH, signatureDER, &signatureDERLen)) {
+        SMLOG_E("ecdsaVerify failure creating signature DER\n");
+        return 0;
+    }
+
+    if (!Verify(SE05X_TEMP_OBJECT, message, SE05X_SHA256_LENGTH, signatureDER, SE05X_EC_SIGNATURE_MAX_DER_LENGTH)) {
+        SMLOG_E("ecdsaVerify failure\n");
+        return 0;
+    }
+
+    if (!deleteBinaryObject(SE05X_TEMP_OBJECT)) {
+        SMLOG_E("ecdsaVerify failure deleting temporary object\n");
+        return 0;
+    }
+
+    return 1;
+}
+
+int SE05XClass::eddsaVerify(const byte message[], const byte signature[], const byte pubkey[])
+{
+    byte pubKey[SE05X_ED_KEY_LENGTH];
+    size_t pubKeyLen = sizeof(pubKey);
+    byte signature[SE05X_ED_SIGNATURE_MAX_LENGTH];
+    size_t signatureLen = sizeof(signature);
+
+    if (!setECKeyXyVauesInDER(pubkey, SE05X_EC_KEY_RAW_LENGTH, pubKey, &pubKeyLen)) {
+        SMLOG_E("edsaVerify failure creating key DER\n");
         return 0;
     }
 

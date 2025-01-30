@@ -210,7 +210,8 @@ typedef enum
     /** Invalid */
     kSE05x_ECCurve_NA        = 0x00,
     kSE05x_ECCurve_NIST_P256 = 0x03,
-    kSE05x_ECCurve_K256    = 0x10,
+    kSE05x_ECCurve_K256      = 0x10,
+    kSE05x_ECCurve_ED25519   = 0x40, 
 } SE05x_ECCurve_t;
 
 /** Values for INS in ISO7816 APDU */
@@ -291,6 +292,17 @@ typedef enum
     kSE05x_ECSignatureAlgo_SHA_384 = 0x22,
     kSE05x_ECSignatureAlgo_SHA_512 = 0x26,
 } SE05x_ECSignatureAlgo_t;
+
+
+
+typedef enum
+{
+    /** Invalid */
+    kSE05x_EDSignatureAlgo_NA = 0,
+    /** NOT SUPPORTED */
+    kSE05x_EDSignatureAlgo_SHA512   = 0xA3,
+} SE05x_EDSignatureAlgo_t;
+
 
 /** Result of operations */
 typedef enum

@@ -356,6 +356,8 @@ public:
      */
     int ecdsaVerify(const byte message[], const byte signature[], const byte pubkey[]);
 
+    int eddsaVerify(const byte message[], const byte signature[], const byte pubkey[]);
+
     /** ecSign
      *
      * Computes ECDSA signature using key stored in KeyID SE050 object.
@@ -372,6 +374,8 @@ public:
      * @return 0 on Failure 1 on Success
      */
     int ecSign(int slot, const byte message[], byte signature[]);
+
+    int edSign(int slot, const byte message[], byte signature[]);
 
     /** readSlot
      *

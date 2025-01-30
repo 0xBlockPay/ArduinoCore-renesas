@@ -99,6 +99,8 @@ smStatus_t DoAPDUTxRx(pSe05xSession_t session_ctx,
 #define TLVSET_Header(PBUF, PBUFLEN, HDR) tlvSet_header(PBUF, PBUFLEN, HDR);
 
 #define TLVSET_ECSignatureAlgo TLVSET_U8
+#define TLVSET_EDSignatureAlgo TLVSET_U8
+
 #define TLVSET_CipherMode TLVSET_U8
 
 #define TLVSET_CryptoModeSubType(DESCRIPTION, PBUF, PBUFLEN, TAG, VALUE) \
